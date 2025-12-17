@@ -18,8 +18,6 @@ jobs:
 
       - name: Send Discord Notifications
         run: |
-          set -euo pipefail
-
           jq -c '.[]' "$JSON_FILE" | while read -r service; do
             title=$(echo "$service" | jq -r '.title')
             url=$(echo "$service" | jq -r '.url')
@@ -36,6 +34,7 @@ jobs:
             curl -s -X POST "$WEBHOOK" \
               -H "Content-Type: application/json" \
               -d "$(jq -n --arg displayTitle "$displayTitle" --arg url "$url" '{
-                content: $displayTitle + "\n" + $url
+                content: "\($displayTitle)\n\($url)"
               }')"
           done
+
