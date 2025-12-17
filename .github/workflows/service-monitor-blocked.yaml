@@ -1,0 +1,41 @@
+name: Reminder to Checked Events on Blocked Venues
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      JSON_FILE: data/service-monitor-blocked-urls.json
+      WEBHOOK: ${{ secrets.SERVICE_MONITOR_BLOCKED_WEBHOOK }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Send Discord Notifications
+        run: |
+          set -euo pipefail
+
+          jq -c '.[]' "$JSON_FILE" | while read -r service; do
+            title=$(echo "$service" | jq -r '.title')
+            url=$(echo "$service" | jq -r '.url')
+            isMonitored=$(echo "$service" | jq -r '.isMonitored')
+
+            if [ "$isMonitored" = "true" ]; then
+              displayTitle="**Monitored · $title**"
+            else
+              displayTitle="$title"
+            fi
+
+            echo "[MSG] $title: $url"
+
+            curl -s -X POST "$WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg displayTitle "$displayTitle" --arg url "$url" '{
+                content: $displayTitle + "\n" + $url
+              }')"
+          done
