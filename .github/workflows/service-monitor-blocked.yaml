@@ -18,23 +18,28 @@ jobs:
 
       - name: Send Discord Notifications
         run: |
-          jq -c '.[]' "$JSON_FILE" | while read -r service; do
-            title=$(echo "$service" | jq -r '.title')
-            url=$(echo "$service" | jq -r '.url')
+          hasMonitoredVenue=false
+
+          while read -r service; do
             isMonitored=$(echo "$service" | jq -r '.isMonitored')
-
             if [ "$isMonitored" = "true" ]; then
-              displayTitle="**Monitored · $title**"
-            else
-              displayTitle="$title"
+              title=$(echo "$service" | jq -r '.title')
+              url=$(echo "$service" | jq -r '.url')
+
+              echo "[MSG] $title: $url"
+
+              curl -s -X POST "$WEBHOOK" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n --arg title "**$title**" --arg url "$url" '{
+                  content: "\($title)\n\($url)"
+                }')"
+
+              hasMonitoredVenue=true
             fi
+          done < <(jq -c '.[]' "$JSON_FILE")
 
-            echo "[MSG] $title: $url"
-
+          if [ "$hasMonitoredVenue" = false ]; then
             curl -s -X POST "$WEBHOOK" \
               -H "Content-Type: application/json" \
-              -d "$(jq -n --arg displayTitle "$displayTitle" --arg url "$url" '{
-                content: "\($displayTitle)\n\($url)"
-              }')"
-          done
-
+              -d '{"content": "No monitored venues to check."}'
+          fi
