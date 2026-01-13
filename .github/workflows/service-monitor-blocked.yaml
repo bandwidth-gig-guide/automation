@@ -2,7 +2,7 @@ name: Reminder to Checked Events on Blocked Venues
 
 on:
   schedule:
-    - cron: '0 6 */3 * *'
+    - cron: '0 9 * * 3'
   workflow_dispatch:
 
 jobs:
