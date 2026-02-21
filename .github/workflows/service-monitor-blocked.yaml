@@ -1,45 +1,45 @@
-name: Reminder to Checked Events on Blocked Venues
+# name: Reminder to Checked Events on Blocked Venues
 
-on:
-  schedule:
-    - cron: '0 9 * * 3'
-  workflow_dispatch:
+# on:
+#   schedule:
+#     - cron: '0 9 * * 3'
+#   workflow_dispatch:
 
-jobs:
-  notify:
-    runs-on: ubuntu-latest
-    env:
-      JSON_FILE: data/service-monitor-blocked-urls.json
-      WEBHOOK: ${{ secrets.SERVICE_MONITOR_BLOCKED_WEBHOOK }}
+# jobs:
+#   notify:
+#     runs-on: ubuntu-latest
+#     env:
+#       JSON_FILE: data/service-monitor-blocked-urls.json
+#       WEBHOOK: ${{ secrets.SERVICE_MONITOR_BLOCKED_WEBHOOK }}
 
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
 
-      - name: Send Discord Notifications
-        run: |
-          hasMonitoredVenue=false
+#       - name: Send Discord Notifications
+#         run: |
+#           hasMonitoredVenue=false
 
-          while read -r service; do
-            isMonitored=$(echo "$service" | jq -r '.isMonitored')
-            if [ "$isMonitored" = "true" ]; then
-              title=$(echo "$service" | jq -r '.title')
-              url=$(echo "$service" | jq -r '.url')
+#           while read -r service; do
+#             isMonitored=$(echo "$service" | jq -r '.isMonitored')
+#             if [ "$isMonitored" = "true" ]; then
+#               title=$(echo "$service" | jq -r '.title')
+#               url=$(echo "$service" | jq -r '.url')
 
-              echo "[MSG] $title: $url"
+#               echo "[MSG] $title: $url"
 
-              curl -s -X POST "$WEBHOOK" \
-                -H "Content-Type: application/json" \
-                -d "$(jq -n --arg title "**$title**" --arg url "$url" '{
-                  content: "\($title)\n\($url)"
-                }')"
+#               curl -s -X POST "$WEBHOOK" \
+#                 -H "Content-Type: application/json" \
+#                 -d "$(jq -n --arg title "**$title**" --arg url "$url" '{
+#                   content: "\($title)\n\($url)"
+#                 }')"
 
-              hasMonitoredVenue=true
-            fi
-          done < <(jq -c '.[]' "$JSON_FILE")
+#               hasMonitoredVenue=true
+#             fi
+#           done < <(jq -c '.[]' "$JSON_FILE")
 
-          if [ "$hasMonitoredVenue" = false ]; then
-            curl -s -X POST "$WEBHOOK" \
-              -H "Content-Type: application/json" \
-              -d '{"content": "No monitored venues to check."}'
-          fi
+#           if [ "$hasMonitoredVenue" = false ]; then
+#             curl -s -X POST "$WEBHOOK" \
+#               -H "Content-Type: application/json" \
+#               -d '{"content": "No monitored venues to check."}'
+#           fi
